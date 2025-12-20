@@ -1,0 +1,7 @@
+[Xfce Panel]
+Type=X-XFCE-PanelPlugin
+Name=Icon Plugin
+Comment=Basic Icon Plugin
+Icon=utilities-terminal
+X-XFCE-Module=xfce4panel-icon
+X-XFCE-API=2.0
