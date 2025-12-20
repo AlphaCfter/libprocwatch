@@ -1,6 +1,6 @@
 all:
 	rm -rf build && mkdir -p build
-	gcc -fPIC -shared panel-plugin/icon.c -o build/libxfce4panel-icon.so \
+	clang -fPIC -shared panel-plugin/icon.c panel-plugin/processmanager.c panel-plugin/gtkgui.c -o build/libxfce4panel-icon.so \
 	$$(pkg-config --cflags --libs gtk+-3.0 libxfce4panel-2.0)
 
 install:

@@ -1,7 +1,7 @@
 [Xfce Panel]
 Type=X-XFCE-PanelPlugin
-Name=Icon Plugin
-Comment=Basic Icon Plugin
+Name=Port Trace
+Comment=Basic wrapper for ss binary which tells the user the number of ports open currently on the system owned by all usergroups
 Icon=utilities-terminal
 X-XFCE-Module=xfce4panel-icon
 X-XFCE-API=2.0
