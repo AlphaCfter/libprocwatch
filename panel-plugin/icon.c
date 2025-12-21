@@ -6,7 +6,6 @@ static void hello_construct(XfcePanelPlugin *plugin)
 {
     GtkWidget *label = gtk_label_new(NULL);
     GtkWidget *button;
-    GError *error;
 
     button = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);

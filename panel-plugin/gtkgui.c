@@ -22,6 +22,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 200);
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     
+    // Set window icon
+    GError *error = NULL;
+    gtk_window_set_icon_from_file(GTK_WINDOW(window), "icons/plug.png", &error);
+    if (error != NULL) {
+        g_warning("Failed to load icon: %s", error->message);
+        g_error_free(error);
+    }
+    
     // Grid like structure to view the following attributes on the GTK screen
     grid = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
