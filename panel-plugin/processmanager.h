@@ -9,4 +9,7 @@ void create_process_manager_window(GtkWidget *parent);
 void on_plugin_clicked(GtkWidget *widget, gpointer data);
 void on_terminate_clicked(GtkWidget *widget, gpointer data);
 gboolean on_hover(GtkWidget *widget, gint x, gint y, gboolean keyboard_mode, GtkTooltip *tooltip, gpointer data);
+unsigned int get_open_ports_count();
+gboolean update_open_ports_label(GtkLabel *label);
+
 #endif
