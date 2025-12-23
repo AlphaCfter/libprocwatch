@@ -11,8 +11,10 @@ run-gui:
 install:
 	sudo mkdir -p /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins
 	sudo mkdir -p /usr/share/xfce4/panel/plugins
+	sudo mkdir -p /usr/share/polkit-1/actions
 	sudo cp build/libxfce4panel-icon.so /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins/
 	sudo cp panel-plugin/icon.desktop /usr/share/xfce4/panel/plugins/xfce4panel-icon.desktop
+	sudo cp com.alpha.processmanager.policy /usr/share/polkit-1/actions/
 	xfce4-panel -q
 	sleep 2
 	xfce4-panel &
@@ -28,6 +30,7 @@ check:
 uninstall:
 	sudo rm -f /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins/libxfce4panel-icon.so
 	sudo rm -f /usr/share/xfce4/panel/plugins/xfce4panel-icon.desktop
+	sudo rm -f /usr/share/polkit-1/actions/com.alpha.processmanager.policy
 	xfce4-panel -q
 	sleep 2
 	xfce4-panel &
