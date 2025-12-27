@@ -12,14 +12,21 @@ ProcessList* get_network_processes() {
     list->processes = g_malloc0(capacity * sizeof(ProcessInfo));
     list->count = 0;
 
-    // Execute pkexec ss -tupln binary with the polkit ofcs
-    const char *cmd = "pkexec ss -tupln 2>/dev/null";
+    g_message("DEBUG: get_network_processes() called");
+    
+    // Execute ss command via pkexec
+    // Polkit will match this against the policy using the executable path
+    const char *cmd = "pkexec /usr/bin/ss -tupln";
+    
+    g_message("DEBUG: About to run command: %s", cmd);
     
     fp = popen(cmd, "r");
     if (fp == NULL) {
         g_warning("Failed to run pkexec ss command");
         return list;
     }
+    
+    g_message("DEBUG: Command executed, reading output...");
 
     // Skip header line
     if (fgets(buffer, sizeof(buffer), fp) == NULL) {
@@ -115,6 +122,7 @@ ProcessList* get_network_processes() {
     }
 
     pclose(fp);
+    g_message("DEBUG: Finished parsing, found %d processes", list->count);
     return list;
 }
 
@@ -135,8 +143,11 @@ void free_process_list(ProcessList *list) {
 
 void on_plugin_clicked(GtkWidget *widget, gpointer data)
 {
+    g_message("DEBUG: on_plugin_clicked called!");
     XfcePanelPlugin *plugin = XFCE_PANEL_PLUGIN(data);
+    g_message("DEBUG: About to call create_process_manager_window");
     create_process_manager_window(GTK_WIDGET(plugin));
+    g_message("DEBUG: Returned from create_process_manager_window");
 }
 
 void on_terminate_clicked(GtkWidget *widget, gpointer data)
