@@ -141,7 +141,28 @@ void on_plugin_clicked(GtkWidget *widget, gpointer data)
 
 void on_terminate_clicked(GtkWidget *widget, gpointer data)
 {
-    
+    if (data == NULL)
+        return;
+
+    int pid = GPOINTER_TO_INT(data);
+    if (pid <= 0)
+        return;
+
+    // Try to terminate the program by sending SIGTERM to kill
+    // it gracefully
+    if (kill(pid, SIGTERM) == 0) {
+    g_message("Sent SIGTERM to process %d", pid);
+
+    // If the process is not willing to shutdown gracefully,
+    // it forces to kill itself with the SIGKILL
+    if (kill(pid, 0) == 0) {
+        g_message("Process %d still running, sending SIGKILL", pid);
+        kill(pid, SIGKILL);
+    }
+    } else {
+        g_message("Failed to send SIGTERM to process %d: %s",
+                pid, g_strerror(errno));
+    }
 }
 
 gboolean on_hover(GtkWidget *widget,
