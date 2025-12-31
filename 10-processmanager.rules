@@ -1,7 +1,0 @@
-/* Allow users in sudo group to run Port Trace without password */
-polkit.addRule(function(action, subject) {
-    if (action.id == "com.alpha.processmanager.view-network" &&
-        subject.isInGroup("sudo")) {
-        return polkit.Result.YES;
-    }
-});

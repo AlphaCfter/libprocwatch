@@ -11,13 +11,15 @@ run-gui:
 install:
 	sudo mkdir -p /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins
 	sudo mkdir -p /usr/share/xfce4/panel/plugins
-	sudo mkdir -p /usr/share/polkit-1/actions
-	sudo mkdir -p /etc/polkit-1/rules.d
+	sudo mkdir -p /etc/sudoers.d
+	sudo mkdir -p /usr/local/bin/panel-plugin/helpers
 	sudo cp build/libxfce4panel-icon.so /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins/
 	sudo cp panel-plugin/icon.desktop /usr/share/xfce4/panel/plugins/xfce4panel-icon.desktop
-	sudo cp com.alpha.processmanager.policy /usr/share/polkit-1/actions/
-	sudo cp 10-processmanager.rules /etc/polkit-1/rules.d/
-	sudo chmod 644 /etc/polkit-1/rules.d/10-processmanager.rules
+	sudo install -m 755 panel-plugin/helpers/ss-network-viewer.sh /usr/local/bin/panel-plugin/helpers/ss-network-viewer.sh
+	sudo install -m 755 panel-plugin/helpers/port-trace-kill.sh /usr/local/bin/panel-plugin/helpers/port-trace-kill.sh
+	sudo cp panel-plugin/sudoers/port-trace.sudoers /etc/sudoers.d/port-trace
+	sudo chmod 0440 /etc/sudoers.d/port-trace
+	sudo chown root:root /etc/sudoers.d/port-trace
 	xfce4-panel -q
 	sleep 2
 	xfce4-panel &
@@ -33,8 +35,8 @@ check:
 uninstall:
 	sudo rm -f /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins/libxfce4panel-icon.so
 	sudo rm -f /usr/share/xfce4/panel/plugins/xfce4panel-icon.desktop
-	sudo rm -f /usr/share/polkit-1/actions/com.alpha.processmanager.policy
-	sudo rm -f /etc/polkit-1/rules.d/10-processmanager.rules
+	sudo rm -rf /usr/local/bin/panel-plugin/helpers
+	sudo rm -f /etc/sudoers.d/port-trace
 	xfce4-panel -q
 	sleep 2
 	xfce4-panel &
