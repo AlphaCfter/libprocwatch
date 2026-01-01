@@ -4,7 +4,9 @@
 // Struct to hold refresh timer context
 typedef struct {
     GtkWidget *grid;
+    GtkWidget *window;
     guint timer_id;
+    gboolean is_rootless;
 } RefreshContext;
 
 // Refresh rate for the GUI to fetch new values
@@ -18,9 +20,10 @@ static const char *attributes[] = {
 
 // Function to populate/refresh grid with process data
 // Returns TRUE on success, FALSE if authentication failed
-static gboolean refresh_process_grid(GtkWidget *grid) {
+static gboolean refresh_process_grid(RefreshContext *ctx) {
     GtkWidget *label;
     GtkWidget *button;
+    GtkWidget *grid = ctx->grid;
     
     g_message("DEBUG: refresh_process_grid called");
     
@@ -38,7 +41,7 @@ static gboolean refresh_process_grid(GtkWidget *grid) {
         GtkWidget *widget = GTK_WIDGET(iter->data);
         gint row = 0;
         gtk_container_child_get(GTK_CONTAINER(grid), widget, "top-attach", &row, NULL);
-        if (row > 0) {  // Keep header row
+        if (row > 0) {
             to_destroy = g_list_prepend(to_destroy, widget);
         }
     }
@@ -54,11 +57,18 @@ static gboolean refresh_process_grid(GtkWidget *grid) {
     g_message("DEBUG: About to fetch network processes");
     ProcessList *process_list = get_network_processes();
     
-    // Check if authentication failed (user cancelled password prompt)
+    // Check if running in rootless mode even withsudo failed
+    // running ss without sudo)
     if (process_list->auth_failed) {
-        g_warning("Authentication failed or was cancelled - stopping refresh");
-        free_process_list(process_list);
-        return FALSE;
+        if (!ctx->is_rootless) {
+            g_message("Running in rootless mode - showing only user's processes");
+            ctx->is_rootless = TRUE;
+            // Update window title to show rootless mode
+            if (GTK_IS_WINDOW(ctx->window)) {
+                gtk_window_set_title(GTK_WINDOW(ctx->window), "Port Trace - Network Monitor (Rootless)");
+            }
+        }
+        // Continue to display the data we have, even in rootless mode
     }
     
     int n = process_list->count;
@@ -147,15 +157,15 @@ static gboolean refresh_process_grid(GtkWidget *grid) {
 
 // Function timer callback for auto refresh
 static gboolean refresh_timer_callback(gpointer user_data) {
-    GtkWidget *grid = GTK_WIDGET(user_data);
+    RefreshContext *ctx = (RefreshContext *)user_data;
     
-    if (!GTK_IS_GRID(grid)) {
+    if (!ctx || !GTK_IS_GRID(ctx->grid)) {
         return G_SOURCE_REMOVE;  // Stops timer if grid is destroyed
     }
     
     // Call refresh and check if authentication failed
     // If refresh_process_grid returns FALSE, stop the timer
-    if (!refresh_process_grid(grid)) {
+    if (!refresh_process_grid(ctx)) {
         g_message("Stopping refresh timer due to authentication failure");
         return G_SOURCE_REMOVE;  // Stop timer - no more password prompts
     }
@@ -231,15 +241,17 @@ void create_process_manager_window(GtkWidget *parent) {
         gtk_grid_attach(GTK_GRID(grid), label, i, 0, 1, 1);
     }
     
-    // Stores grid reference
+    // Stores grid and window references
     ctx->grid = grid;
+    ctx->window = window;
+    ctx->is_rootless = FALSE;
     
     // Sets initial population
     g_message("DEBUG: About to do initial refresh");
-    refresh_process_grid(grid);
+    refresh_process_grid(ctx);
     
     // Sets up auto-refresh timer with given time interval
-    ctx->timer_id = g_timeout_add_seconds(REFRESH_INTERVAL_SEC, refresh_timer_callback, grid);
+    ctx->timer_id = g_timeout_add_seconds(REFRESH_INTERVAL_SEC, refresh_timer_callback, ctx);
     g_message("DEBUG: Timer set up with ID: %u", ctx->timer_id);
     
     // Shows the window

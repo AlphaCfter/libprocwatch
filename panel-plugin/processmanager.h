@@ -131,4 +131,23 @@ unsigned int get_open_ports_count(void);
  */
 gboolean update_open_ports_label(GtkLabel *label);
 
+/**
+ * display_gtk:
+ * A helper function which displays a simple GTK dialog box to display errors
+ * or statements since g_print isn't allowed on the production. g_print uses
+ * the stdout and gtk_warnings to throw errors latching onto a terminal window which 
+ * is active
+ * 
+ * @parent: A GtkWidget to depict a parent so the child window can latch itself
+ * @window_title: A string of GTK window title to be displayed onto the dialouge box
+ * @markup: A string of GTK window which displays the body text
+ * @button1_label: A string of GTK label for the buttons1
+ * @button2_label: A string of GTK label for the button2
+ * 
+ * Returns: A gboolean value weather these buttons were clicked
+ */
+gboolean display_gtk(GtkWidget* parent, const char* window_title,
+                    const char* markup, const char* button1_label,
+                    const char* button2_label);
+
 #endif

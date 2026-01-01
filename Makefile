@@ -32,6 +32,10 @@ check:
 	xfce4-panel -q
 	xfce4-panel &
 
+test_dialog:
+	clang -o test_display_gtk panel-plugin/test_display_gtk.c panel-plugin/processmanager.c panel-plugin/gtkgui.c -I. `pkg-config --cflags --libs gtk+-3.0 libxfce4panel-2.0`
+
+
 uninstall:
 	sudo rm -f /usr/lib/x86_64-linux-gnu/xfce4/panel/plugins/libxfce4panel-icon.so
 	sudo rm -f /usr/share/xfce4/panel/plugins/xfce4panel-icon.desktop
