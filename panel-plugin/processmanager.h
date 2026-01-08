@@ -150,4 +150,8 @@ gboolean display_gtk(GtkWidget* parent, const char* window_title,
                     const char* markup, const char* button1_label,
                     const char* button2_label);
 
+gboolean display_gtk_printf(GtkWidget *parent, const char *title, 
+                        const char *button1, const char *button2,
+                        const char *format, ...);
+
 #endif

@@ -205,10 +205,18 @@ void on_terminate_clicked(GtkWidget *widget, gpointer data)
         return;
     }
 
+    // Gets the toplevel window from the button widget
+    GtkWidget *window = gtk_widget_get_toplevel(widget);
+    if (!GTK_IS_WINDOW(window)) {
+        window = NULL;
+    }
+
     // Simple check: Verify process exists before trying to kill it
     // kill(pid, 0) returns 0 if process exists, -1 if it doesn't
     if (kill(pid, 0) != 0) {
-        g_warning("Process %d does not exist or is not accessible", pid);
+        char *markup = g_strdup_printf("Process %d does not exist or is not accessible", pid);
+        display_gtk(window, "Process Not Found", markup, "OK", NULL);
+        g_free(markup);
         return;
     }
 
@@ -221,10 +229,15 @@ void on_terminate_clicked(GtkWidget *widget, gpointer data)
 
         // Check if process still exists
         if (kill(pid, 0) == 0) {
-            g_message("Process %d still running, sending SIGKILL", pid);
-            if (kill(pid, SIGKILL) == -1) {
-                g_warning("Failed to send SIGKILL to process %d: %s",
-                         pid, g_strerror(errno));
+            gboolean status = display_gtk_printf(window, 
+                "Unable to kill gracefully", "Kill Process", "Cancel", "SIGTERM was issued to PID %d but it still exists, should it kill forcefully?",pid);
+            if (status) {
+                if (kill(pid, SIGKILL) == -1) {
+                    g_warning("Failed to send SIGKILL to process %d: %s",
+                             pid, g_strerror(errno));
+                } else {
+                    g_message("Sent SIGKILL to process %d", pid);
+                }
             }
         }
     } else {
@@ -340,6 +353,19 @@ display_gtk(GtkWidget   *parent,
     gtk_widget_destroy(dialog);
 
     return response == GTK_RESPONSE_ACCEPT;
+}
+
+gboolean display_gtk_printf(GtkWidget *widget, const char *title, 
+                        const char *button1, const char *button2,
+                        const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    char *markup = g_strdup_vprintf(format, args);
+    va_end(args);
+    
+    gboolean result = display_gtk(widget, title, markup, button1, button2);
+    g_free(markup);
+    return result;
 }
 
 gboolean on_hover(GtkWidget *widget,
