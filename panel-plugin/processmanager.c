@@ -211,13 +211,24 @@ void on_terminate_clicked(GtkWidget *widget, gpointer data)
         window = NULL;
     }
 
+    char *markup = g_strdup_printf("Are you sure you want to terminate process with PID %d?", pid);
+    gboolean confirm = display_gtk(window, "Confirm Termination", markup, "Terminate", "Cancel");
+    g_free(markup);
+
+    if (!confirm) { return; }
+
     // Simple check: Verify process exists before trying to kill it
     // kill(pid, 0) returns 0 if process exists, -1 if it doesn't
     if (kill(pid, 0) != 0) {
-        char *markup = g_strdup_printf("Process %d does not exist or is not accessible", pid);
-        display_gtk(window, "Process Not Found", markup, "OK", NULL);
-        g_free(markup);
-        return;
+        // Only show "not found" if the process truly doesn't exist (ESRCH)
+        // If errno is EPERM, the process exists but requires elevated privileges
+        if (errno != EPERM) {
+            char *markup = g_strdup_printf("Process %d does not exist or is not accessible", pid);
+            display_gtk(window, "Process Not Found", markup, "OK", NULL);
+            g_free(markup);
+            return;
+        }
+        // If EPERM, continue to attempt kill
     }
 
     // Try to terminate the program by sending SIGTERM to kill it gracefully
@@ -252,12 +263,18 @@ void on_terminate_clicked(GtkWidget *widget, gpointer data)
             if (status == 0) {
                 g_message("Successfully killed root process %d via sudo helper", pid);
             } else {
-                g_warning("Failed to kill root process %d (exit status: %d)", 
-                         pid, WEXITSTATUS(status));
+                char *msg = g_strdup_printf("Process %d cannot be killed even via root.\nIt is protected by the systemd namespace", pid);
+                gboolean result = display_gtk(window, "Couldn't kill process", msg, "OK", "Learn More");
+                if (!result) {
+                            gtk_show_uri_on_window(GTK_WINDOW(window),
+                           "https://github.com/AlphaCfter/libprocwatch", // will be updated with proper .md docs
+                           GDK_CURRENT_TIME,
+                           NULL);
+                } 
+                g_free(msg);
             }
         } else {
-            g_warning("Failed to send SIGTERM to process %d: %s",
-                     pid, g_strerror(errno));
+            display_gtk(window, "Error", "The process may have exited or the signal was rejected by the kernel", "OK", NULL);
         }
     }
 }
@@ -455,4 +472,75 @@ gboolean update_open_ports_label(GtkLabel *label) {
     g_free(markup);
 
     return TRUE;
+}
+
+/**
+ * get_special_ip_type:
+ * Identifies the type of special IP address
+ * Returns the corresponding SpecialIPType enum value
+ */
+SpecialIPType get_special_ip_type(const char *remote_ip)
+{
+    if (remote_ip == NULL) {
+        return SPECIAL_IP_NONE;
+    }
+
+    switch (remote_ip[0]) {
+        case '0':
+            // Check for 0.0.0.0 (IPv4)
+            if (g_strcmp0(remote_ip, "0.0.0.0") == 0) {
+                return SPECIAL_IP_IPV4_ANY;
+            }
+            return SPECIAL_IP_NONE;
+        case '[':
+            // Check for [::] (IPv6 any address)
+            if (g_strcmp0(remote_ip, "[::]") == 0) {
+                return SPECIAL_IP_IPV6_ANY;
+            }
+            return SPECIAL_IP_NONE;
+        default:
+            return SPECIAL_IP_NONE;
+    }
+}
+
+/**
+ * is_special_remote_ip:
+ * Checks if the remote IP is a special/unconnected address
+ */
+gboolean is_special_remote_ip(const char *remote_ip)
+{
+    return get_special_ip_type(remote_ip) != SPECIAL_IP_NONE;
+}
+
+/**
+ * get_remote_ip_tooltip:
+ * Returns tooltip information for special remote IPs on the GUI
+ */
+char* get_remote_ip_tooltip(const char *remote_ip)
+{
+    if (remote_ip == NULL) {
+        return g_strdup("Unknown remote address");
+    }
+
+    SpecialIPType ip_type = get_special_ip_type(remote_ip);
+    
+    switch (ip_type) {
+        case SPECIAL_IP_IPV4_ANY:
+            return g_strdup(
+                "Listening socket\n\n"
+                "This socket is listening on all available interfaces.\n"
+                "It can accept connections from any remote address.\n\n"
+                "This is a server process in listening mode."
+            );
+        case SPECIAL_IP_IPV6_ANY:
+            return g_strdup(
+                "Listening socket (IPv6)\n\n"
+                "This socket is listening on all available IPv6 interfaces.\n"
+                "It can accept connections from any remote address.\n\n"
+                "This is a server process in listening mode."
+            );
+        case SPECIAL_IP_NONE:
+        default:
+            return g_strdup("Remote peer address");
+    }
 }

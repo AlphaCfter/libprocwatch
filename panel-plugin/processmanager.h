@@ -30,6 +30,21 @@ typedef struct {
 } ProcessInfo;
 
 /**
+ * SpecialIPType:
+ *
+ * Enum representing special IP addresses used in network connections.
+ *
+ * @SPECIAL_IP_NONE: Not a special IP address
+ * @SPECIAL_IP_IPV4_ANY: IPv4 any address (0.0.0.0) - listening socket
+ * @SPECIAL_IP_IPV6_ANY: IPv6 any address (::) - listening socket
+ */
+typedef enum {
+    SPECIAL_IP_NONE = 0,
+    SPECIAL_IP_IPV4_ANY = 1,
+    SPECIAL_IP_IPV6_ANY = 2
+} SpecialIPType;
+
+/**
  * ProcessList:
  *
  * Container for a dynamically allocated list of network-related processes.
@@ -153,5 +168,26 @@ gboolean display_gtk(GtkWidget* parent, const char* window_title,
 gboolean display_gtk_printf(GtkWidget *parent, const char *title, 
                         const char *button1, const char *button2,
                         const char *format, ...);
+
+/**
+ * is_special_remote_ip:
+ * @remote_ip: The remote IP address to check
+ *
+ * Checks if the remote IP is a special/unconnected address (0.0.0.0 or [::])
+ *
+ * Returns: %TRUE if the remote IP is special, %FALSE otherwise
+ */
+gboolean is_special_remote_ip(const char *remote_ip);
+
+/**
+ * get_remote_ip_tooltip:
+ * @remote_ip: The remote IP address
+ *
+ * Returns a tooltip string describing what the special remote IP means.
+ * The returned string is allocated and must be freed by the caller.
+ *
+ * Returns: (transfer full): A newly allocated string with tooltip information
+ */
+char* get_remote_ip_tooltip(const char *remote_ip);
 
 #endif

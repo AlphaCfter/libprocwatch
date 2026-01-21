@@ -7,6 +7,7 @@ typedef struct {
     GtkWidget *window;
     guint timer_id;
     gboolean is_rootless;
+    gboolean is_hovering;
 } RefreshContext;
 
 // Refresh rate for the GUI to fetch new values
@@ -17,6 +18,29 @@ static const char *attributes[] = {
         "Process", "Port", "Internal IP", "Remote IP", 
         "Protocol", "PID", "Action"
 };
+
+// Handle mouse enter event - set hovering state
+static gboolean on_grid_enter_notify(GtkWidget *widget, GdkEventCrossing *event, gpointer user_data) {
+    RefreshContext *ctx = (RefreshContext *)user_data;
+    ctx->is_hovering = TRUE;
+    g_message("DEBUG: User hovering over grid - pausing refresh");
+    return FALSE;
+}
+
+// Handle mouse leave event - unset hovering state
+static gboolean on_grid_leave_notify(GtkWidget *widget, GdkEventCrossing *event, gpointer user_data) {
+    RefreshContext *ctx = (RefreshContext *)user_data;
+    ctx->is_hovering = FALSE;
+    g_message("DEBUG: User left grid - resuming refresh");
+    return FALSE;
+}
+
+// Helper function to attach hover handlers to a widget
+static void attach_hover_handlers(GtkWidget *widget, RefreshContext *ctx) {
+    g_signal_connect(widget, "enter-notify-event", G_CALLBACK(on_grid_enter_notify), ctx);
+    g_signal_connect(widget, "leave-notify-event", G_CALLBACK(on_grid_leave_notify), ctx);
+    gtk_widget_add_events(widget, GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
+}
 
 // Function to populate/refresh grid with process data
 // Returns TRUE on success, FALSE if authentication failed
@@ -85,6 +109,7 @@ static gboolean refresh_process_grid(RefreshContext *ctx) {
         gtk_widget_set_vexpand(label, TRUE);
         gtk_widget_set_margin_start(label, 5);
         gtk_widget_set_margin_end(label, 5);
+        attach_hover_handlers(label, ctx);
         gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
         
         // Column 1: Port
@@ -96,6 +121,7 @@ static gboolean refresh_process_grid(RefreshContext *ctx) {
         gtk_widget_set_vexpand(label, TRUE);
         gtk_widget_set_margin_start(label, 5);
         gtk_widget_set_margin_end(label, 5);
+        attach_hover_handlers(label, ctx);
         gtk_grid_attach(GTK_GRID(grid), label, 1, row, 1, 1);
         
         // Column 2: Local IP
@@ -105,16 +131,50 @@ static gboolean refresh_process_grid(RefreshContext *ctx) {
         gtk_widget_set_vexpand(label, TRUE);
         gtk_widget_set_margin_start(label, 5);
         gtk_widget_set_margin_end(label, 5);
+        attach_hover_handlers(label, ctx);
         gtk_grid_attach(GTK_GRID(grid), label, 2, row, 1, 1);
         
         // Column 3: Remote IP
-        label = gtk_label_new(proc->remote_ip);
-        gtk_widget_set_halign(label, GTK_ALIGN_START);
-        gtk_widget_set_hexpand(label, TRUE);
-        gtk_widget_set_vexpand(label, TRUE);
-        gtk_widget_set_margin_start(label, 5);
-        gtk_widget_set_margin_end(label, 5);
-        gtk_grid_attach(GTK_GRID(grid), label, 3, row, 1, 1);
+        if (is_special_remote_ip(proc->remote_ip)) {
+            // Display remote IP with info icon for special addresses
+            GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+            gtk_widget_set_halign(box, GTK_ALIGN_START);
+            
+            label = gtk_label_new(proc->remote_ip);
+            gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+            
+            // Create info icon button
+            GtkWidget *info_button = gtk_button_new();
+            gtk_button_set_relief(GTK_BUTTON(info_button), GTK_RELIEF_NONE);
+            GtkWidget *info_icon = gtk_image_new_from_icon_name("dialog-information-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_container_add(GTK_CONTAINER(info_button), info_icon);
+            
+            // Set tooltip with information
+            char *tooltip_text = get_remote_ip_tooltip(proc->remote_ip);
+            gtk_widget_set_tooltip_text(info_button, tooltip_text);
+            g_free(tooltip_text);
+            
+            gtk_box_pack_start(GTK_BOX(box), info_button, FALSE, FALSE, 0);
+            gtk_widget_show_all(box);
+            
+            gtk_widget_set_hexpand(box, TRUE);
+            gtk_widget_set_vexpand(box, TRUE);
+            gtk_widget_set_margin_start(box, 5);
+            gtk_widget_set_margin_end(box, 5);
+            attach_hover_handlers(box, ctx);
+            attach_hover_handlers(label, ctx);
+            attach_hover_handlers(info_button, ctx);
+            gtk_grid_attach(GTK_GRID(grid), box, 3, row, 1, 1);
+        } else {
+            label = gtk_label_new(proc->remote_ip);
+            gtk_widget_set_halign(label, GTK_ALIGN_START);
+            gtk_widget_set_hexpand(label, TRUE);
+            gtk_widget_set_vexpand(label, TRUE);
+            gtk_widget_set_margin_start(label, 5);
+            gtk_widget_set_margin_end(label, 5);
+            attach_hover_handlers(label, ctx);
+            gtk_grid_attach(GTK_GRID(grid), label, 3, row, 1, 1);
+        }
         
         // Column 4: Protocol
         label = gtk_label_new(proc->protocol);
@@ -123,6 +183,7 @@ static gboolean refresh_process_grid(RefreshContext *ctx) {
         gtk_widget_set_vexpand(label, TRUE);
         gtk_widget_set_margin_start(label, 5);
         gtk_widget_set_margin_end(label, 5);
+        attach_hover_handlers(label, ctx);
         gtk_grid_attach(GTK_GRID(grid), label, 4, row, 1, 1);
         
         // Column 5: PID
@@ -134,12 +195,14 @@ static gboolean refresh_process_grid(RefreshContext *ctx) {
         gtk_widget_set_vexpand(label, TRUE);
         gtk_widget_set_margin_start(label, 5);
         gtk_widget_set_margin_end(label, 5);
+        attach_hover_handlers(label, ctx);
         gtk_grid_attach(GTK_GRID(grid), label, 5, row, 1, 1);
         
         // Column 6: Terminate button
         button = gtk_button_new_with_label("Terminate");
         gtk_widget_set_hexpand(button, TRUE);
         gtk_widget_set_vexpand(button, TRUE);
+        attach_hover_handlers(button, ctx);
         g_signal_connect(button, "clicked", 
                         G_CALLBACK(on_terminate_clicked), 
                         GINT_TO_POINTER(proc->pid));
@@ -161,6 +224,12 @@ static gboolean refresh_timer_callback(gpointer user_data) {
     
     if (!ctx || !GTK_IS_GRID(ctx->grid)) {
         return G_SOURCE_REMOVE;  // Stops timer if grid is destroyed
+    }
+    
+    // Skip refresh if user is hovering to prevent blinking
+    if (ctx->is_hovering) {
+        g_message("DEBUG: Skipping refresh while hovering");
+        return G_SOURCE_CONTINUE;  // Keep timer running, but skip this refresh
     }
     
     // Call refresh and check if authentication failed
@@ -223,6 +292,10 @@ void create_process_manager_window(GtkWidget *parent) {
     gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 5);
     gtk_container_add(GTK_CONTAINER(scrolled_window), grid);
+    
+    // Connect hover event handlers
+    g_signal_connect(grid, "enter-notify-event", G_CALLBACK(on_grid_enter_notify), ctx);
+    g_signal_connect(grid, "leave-notify-event", G_CALLBACK(on_grid_leave_notify), ctx);
     
     for (int i = 0; i < 7; i++) {
         label = gtk_label_new(attributes[i]);

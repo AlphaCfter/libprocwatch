@@ -44,3 +44,8 @@ uninstall:
 	xfce4-panel -q
 	sleep 2
 	xfce4-panel &
+
+dependencies:
+	sudo apt install clang libgtk-3-dev libgtk-4-dev libxfce4panel-2.0-dev libxfce4ui-2-dev libxfce4util-dev
+	
+

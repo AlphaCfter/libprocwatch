@@ -4,5 +4,5 @@
 # Both scripts validate input and execute only hardcoded commands
 # - ss-network-viewer: ignores all args, always runs /usr/bin/ss -tupln
 # - port-trace-kill: validates PID is numeric, runs /usr/bin/kill -9 <PID>
-%sudo ALL=(ALL) NOPASSWD: /usr/local/bin/panel-plugin/helpers/ss-network-viewer.sh
-%sudo ALL=(ALL) NOPASSWD: /usr/local/bin/panel-plugin/helpers/port-trace-kill.sh
+%sudo ALL=(root) NOPASSWD: /usr/local/bin/panel-plugin/helpers/ss-network-viewer.sh
+%sudo ALL=(root) NOPASSWD: /usr/local/bin/panel-plugin/helpers/port-trace-kill.sh
